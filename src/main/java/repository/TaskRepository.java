@@ -13,20 +13,20 @@ import java.util.List;
 @Repository
 public interface TaskRepository extends JpaRepository<Task, Integer> {
 
-    List<Task> findByCompletedTrue();
+    List<Task> findByDeletedFalse();
 
-    List<Task> findByCompletedFalse();
+    List<Task> findByDeletedTrue();
 
-    List<Task> findByPriority(Task.Priority priority);
-
-    List<Task> findByTitleContainingIgnoreCase(String title);
-
-    List<Task> findByCompletedAndPriority(Boolean completed, Task.Priority priority);
-
-    @Query("SELECT t FROM Task t WHERE t.title LIKE %:keyword% OR t.description LIKE %:keyword%")
+    @Query("SELECT t FROM Task t WHERE " +
+            "(LOWER(t.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(t.description) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND t.deleted = false")
     List<Task> searchTasks(@Param("keyword") String keyword);
 
+
+    // Pagination example
     Page<Task> findByCompletedTrue(Pageable pageable);
 
+    // Count tasks by priority
     long countByPriority(Task.Priority priority);
 }

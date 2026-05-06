@@ -1,136 +1,144 @@
-Campus Task Board API (HW6)
-A Spring Boot REST API for managing tasks with full CRUD operations, filtering, searching, and pagination.
-Developed for CISC 3130 – Homework 6.
 
+README.md: Campus Task Board API
 
-Overview
-This project implements a Task Board system where users can:
+Project Overview
 
+This project is a Spring Boot REST API for managing tasks in a Campus Task Board system. It supports creating, updating, deleting, restoring, searching, and paginating tasks. The API was fully tested using Postman, and all endpoints return clean JSON responses.
 
-Create tasks
+The goal of this assignment was to practice building a complete backend with CRUD operations, soft delete functionality, and additional features like search and pagination.
 
-
-View all tasks
-
-
-Update tasks
-
-
-Delete tasks
-
-
-Filter tasks by completion status
-
-
-Filter tasks by priority
-
-
-Search tasks by keyword
-
-
-Retrieve tasks with pagination
-
-
-All endpoints were fully tested using Postman.
 
 
 Technologies Used
-Java 17
+
+• Java 17
+
+• Spring Boot
+
+• Spring Web
+
+• Spring Data JPA
+
+• H2 Database (in‑memory)
+
+• Maven
+
+• Postman (for testing)
 
 
-Spring Boot
 
 
-Spring Web
+Project Structure
 
+src/
+└── main/
+├── java/
+│    └── com.example.taskboard
+│          ├── controller
+│          ├── service
+│          ├── repository
+│          └── model
+└── resources/
+├── application.properties
+└── data.sql (optional)
 
-Spring Data JPA
-
-
-H2 Database
-
-
-Maven
-
-
-Postman (for API testing)
 
 
 How to Run the Project
-1. Requirements
-   Java 17 installed
+
+1. Clone or download the project
+2. Open in IntelliJ or VS Code
+3. Run the Spring Boot application
+4. API will start at:
+   http://localhost:8081
 
 
-Maven installed (optional — IntelliJ handles it automatically)
+API Endpoints
 
-
-2. Running the Application
-   Open the project in IntelliJ
-
-
-Run the main class:
-
-
-Code
-CampusTaskboardApplication.java
-When the server starts, you should see:
-
-
-Code
-Tomcat started on port(s): 8081
-Started CampusTaskboardApplication
-API base URL:
-
-
-Code
-http://localhost:8081/api/tasks
-Endpoints
-CRUD Endpoints
-Method	Endpoint	Description
-POST	/api/tasks	Create a new task
-GET	/api/tasks	Get all tasks
-GET	/api/tasks/{id}	Get a task by ID
-PUT	/api/tasks/{id}	Update a task
-DELETE	/api/tasks/{id}	Delete a task
+Below is a summary of all endpoints implemented and tested.
 
 
 
+1. Create a Task
 
-Special Endpoints (HW6 Requirements)
-Method	Endpoint	Description
-GET	/api/tasks/completed	Get all completed tasks
-GET	/api/tasks/incomplete	Get all incomplete tasks
-GET	/api/tasks/priority/{priority}	Filter by LOW, MEDIUM, HIGH
-GET	/api/tasks/search?keyword=	Search by title or description
-GET	/api/tasks/paginated?page=&size=	Pagination support
+POST /api/tasks
+Creates a new task with title, description, completion status, and priority.
 
 
 
+2. Get All Tasks
 
-Example JSON (Create Task)
-json
-{
-"title": "Buy groceries",
-"description": "Milk, eggs, bread",
-"completed": false,
-"priority": "LOW"
-}
-
- Postman Testing
-
-All endpoints were tested successfully in Postman, including:
+GET /api/tasks
+Returns a list of all non‑deleted tasks.
 
 
-Creating tasks
+
+3. Get Task by ID
+
+GET /api/tasks/{id}
+Returns a single task by its ID.
 
 
-Updating tasks
+
+4. Update a Task
+
+PUT /api/tasks/{id}
+Updates title, description, completion status, and priority.
 
 
-Filtering (completed/incomplete/priority)
+
+5. Soft Delete a Task
+
+DELETE /api/tasks/{id}
+Marks a task as deleted without removing it from the database.
 
 
-Searching
+
+6. Restore a Task
+
+PUT /api/tasks/{id}/restore
+Restores a previously soft‑deleted task.
 
 
-Pagination
+
+7. Search Tasks
+
+GET /api/tasks/search?keyword=...
+Searches tasks by title or description.
+
+
+
+8. Pagination (Completed Tasks)
+
+GET /api/tasks/completed?page=0&size=5
+Returns completed tasks with pagination metadata.
+
+
+Screenshots
+
+All 10 screenshots of the API tests (POST, GET, PUT, DELETE, RESTORE, SEARCH, PAGINATION) are included in the final PDF submission.
+
+
+
+Summary
+
+This project demonstrates:
+
+• Full CRUD functionality
+
+• Soft delete + restore
+
+• Search filtering
+
+• Pagination
+
+• Clean JSON responses
+
+• Organized backend structure
+
+• Successful Postman testing
+
+
+Everything works as expected, and all endpoints return correct status codes.
+
+

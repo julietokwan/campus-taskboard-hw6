@@ -1,116 +1,81 @@
 package edu.brooklyn.cisc3130.taskboard.controller;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-
+import edu.brooklyn.cisc3130.taskboard.dto.TaskRequest;
+import edu.brooklyn.cisc3130.taskboard.dto.TaskResponse;
 import edu.brooklyn.cisc3130.taskboard.model.Task;
 import edu.brooklyn.cisc3130.taskboard.service.TaskService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
 
-    private final TaskService taskService;
+    @Autowired
+    private TaskService taskService;
 
-    public TaskController(TaskService taskService) {
-        this.taskService = taskService;
-    }
-
-    @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks() {
-        List<Task> tasks = taskService.getAllTasks();
-        return ResponseEntity.ok(tasks);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Task> getTaskById(@PathVariable Integer id) {
-        Optional<Task> task = taskService.getTaskById(id);
-        return task.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
+    // CREATE
     @PostMapping
-    public ResponseEntity<Task> createTask(@Valid @RequestBody Task task) {
-        Task createdTask = taskService.createTask(task);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
+    public TaskResponse createTask(@Valid @RequestBody TaskRequest request) {
+        Task task = taskService.createTask(request);
+        return TaskResponse.fromEntity(task);
     }
 
+    // GET ALL (non-deleted)
+    @GetMapping
+    public List<TaskResponse> getAllTasks() {
+        return taskService.getAllTasks()
+                .stream()
+                .map(TaskResponse::fromEntity)
+                .toList();
+    }
+
+    // GET BY ID
+    @GetMapping("/{id}")
+    public TaskResponse getTaskById(@PathVariable Integer id) {
+        return TaskResponse.fromEntity(taskService.getTaskById(id));
+    }
+
+    // UPDATE
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(
-            @PathVariable Integer id,
-            @Valid @RequestBody Task task) {
-        Optional<Task> updatedTask = taskService.updateTask(id, task);
-        return updatedTask.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public TaskResponse updateTask(@PathVariable Integer id,
+                                   @Valid @RequestBody TaskRequest request) {
+        Task updated = taskService.updateTask(id, request);
+        return TaskResponse.fromEntity(updated);
     }
 
+    // SOFT DELETE
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Integer id) {
-        boolean deleted = taskService.deleteTask(id);
-        return deleted ? ResponseEntity.noContent().build()
-                : ResponseEntity.notFound().build();
+    public String deleteTask(@PathVariable Integer id) {
+        taskService.deleteTask(id);
+        return "Task soft-deleted successfully";
     }
 
-    // Validation error handler
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidationExceptions(
-            MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
-        return errors;
+    // RESTORE
+    @PutMapping("/{id}/restore")
+    public String restoreTask(@PathVariable Integer id) {
+        taskService.restoreTask(id);
+        return "Task restored successfully";
     }
 
-    @GetMapping("/completed")
-    public ResponseEntity<List<Task>> getCompletedTasks() {
-        return ResponseEntity.ok(taskService.getCompletedTasks());
-    }
-
-    @GetMapping("/incomplete")
-    public ResponseEntity<List<Task>> getIncompleteTasks() {
-        return ResponseEntity.ok(taskService.getIncompleteTasks());
-    }
-
-    @GetMapping("/priority/{priority}")
-    public ResponseEntity<List<Task>> getTasksByPriority(@PathVariable String priority) {
-        try {
-            Task.Priority priorityEnum = Task.Priority.valueOf(priority.toUpperCase());
-            return ResponseEntity.ok(taskService.getTasksByPriority(priorityEnum));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
+    // SEARCH
     @GetMapping("/search")
-    public ResponseEntity<List<Task>> searchTasks(@RequestParam String keyword) {
-        return ResponseEntity.ok(taskService.searchTasks(keyword));
+    public List<TaskResponse> searchTasks(@RequestParam String keyword) {
+        return taskService.searchTasks(keyword)
+                .stream()
+                .map(TaskResponse::fromEntity)
+                .toList();
     }
 
-    @GetMapping("/paginated")
-    public ResponseEntity<Page<Task>> getTasksPaginated(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id") String sortBy) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy));
-        Page<Task> tasks = taskService.getAllTasks(pageable);
-        return ResponseEntity.ok(tasks);
+    // PAGINATION
+    @GetMapping("/completed")
+    public Page<Task> getCompletedTasks(@RequestParam int page,
+                                        @RequestParam int size) {
+        return taskService.getCompletedTasks(PageRequest.of(page, size));
     }
 }

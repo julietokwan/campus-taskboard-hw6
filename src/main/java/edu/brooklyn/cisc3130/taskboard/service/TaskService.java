@@ -1,84 +1,73 @@
 package edu.brooklyn.cisc3130.taskboard.service;
 
+import edu.brooklyn.cisc3130.taskboard.dto.TaskRequest;
+import edu.brooklyn.cisc3130.taskboard.exception.TaskNotFoundException;
 import edu.brooklyn.cisc3130.taskboard.model.Task;
 import edu.brooklyn.cisc3130.taskboard.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
-@Transactional
 public class TaskService {
 
-    private final TaskRepository taskRepository;
-
     @Autowired
-    public TaskService(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
+    private TaskRepository taskRepository;
+
+    // GET BY ID
+    public Task getTaskById(Integer id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new TaskNotFoundException(id));
     }
 
+    // GET ALL (non-deleted)
     public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+        return taskRepository.findByDeletedFalse();
     }
 
-    public Page<Task> getAllTasks(Pageable pageable) {
-        return taskRepository.findAll(pageable);
-    }
-
-    public Optional<Task> getTaskById(Integer id) {
-        return taskRepository.findById(id);
-    }
-
-    public Task createTask(Task task) {
-        if (task.getCompleted() == null) {
-            task.setCompleted(false);
-        }
-        if (task.getPriority() == null) {
-            task.setPriority(Task.Priority.MEDIUM);
-        }
+    // CREATE
+    public Task createTask(TaskRequest request) {
+        Task task = new Task();
+        task.setTitle(request.getTitle());
+        task.setDescription(request.getDescription());
+        task.setCompleted(request.getCompleted() != null ? request.getCompleted() : false);
+        task.setPriority(Task.Priority.valueOf(request.getPriority().toUpperCase()));
         return taskRepository.save(task);
     }
 
-    public Optional<Task> updateTask(Integer id, Task updatedTask) {
-        return taskRepository.findById(id).map(task -> {
-            task.setTitle(updatedTask.getTitle());
-            task.setDescription(updatedTask.getDescription());
-            task.setCompleted(updatedTask.getCompleted());
-            task.setPriority(updatedTask.getPriority());
-            return taskRepository.save(task);
-        });
+    // UPDATE
+    public Task updateTask(Integer id, TaskRequest request) {
+        Task task = getTaskById(id);
+        task.setTitle(request.getTitle());
+        task.setDescription(request.getDescription());
+        task.setCompleted(request.getCompleted());
+        task.setPriority(Task.Priority.valueOf(request.getPriority().toUpperCase()));
+        return taskRepository.save(task);
     }
 
-    public boolean deleteTask(Integer id) {
-        if (taskRepository.existsById(id)) {
-            taskRepository.deleteById(id);
-            return true;
-        }
-        return false;
+    // SOFT DELETE
+    public void deleteTask(Integer id) {
+        Task task = getTaskById(id);
+        task.setDeleted(true);
+        taskRepository.save(task);
     }
 
-    // New methods using repository queries
-    public List<Task> getCompletedTasks() {
-        return taskRepository.findByCompletedTrue();
+    // RESTORE
+    public void restoreTask(Integer id) {
+        Task task = getTaskById(id);
+        task.setDeleted(false);
+        taskRepository.save(task);
     }
 
-    public List<Task> getIncompleteTasks() {
-        return taskRepository.findByCompletedFalse();
-    }
-
-    public List<Task> getTasksByPriority(Task.Priority priority) {
-        return taskRepository.findByPriority(priority);
-    }
-
+    // SEARCH
     public List<Task> searchTasks(String keyword) {
         return taskRepository.searchTasks(keyword);
     }
 
+    // PAGINATION FOR COMPLETED TASKS
     public Page<Task> getCompletedTasks(Pageable pageable) {
         return taskRepository.findByCompletedTrue(pageable);
     }
